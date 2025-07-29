@@ -3,6 +3,7 @@ from tkinter import END, messagebox
 from tkinter import PhotoImage, StringVar
 from random import choice, randint, shuffle
 import pyperclip
+import json
 
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
@@ -36,34 +37,59 @@ def add_password():
         "password": len(password)
     }
 
-    empty_fields = []
+    empty_fields = [key for key in fields if fields[key] == 0]
 
-    for key in fields:
-        if  fields[key] == 0:
-            empty_fields.append(key)
+    new_data = {
+        website: {
+            "email": email,
+            "password": password
+        }
+    }
 
     if len(empty_fields) > 0:
-        is_ok = False
         message = f""
         for field in empty_fields:
             message += f"{field} cannot be empty\n"
 
         messagebox.showinfo(title="Aborting", message=message)
 
-    else :
-        is_ok = messagebox.askokcancel(title="Saving password", message=f"These are the details entered: \n"
-                                                                f"Website: {website}\n"
-                                                                f"Username: {email}\n"
-                                                                f"Password: {password}\n"
-                                                                f"Is it ok to save?")
+    else:
+        try:
+            with open("data.json", "r") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            with open("data.json", "w") as f:
+                json.dump(new_data, f, indent=4)
+        else:
+            data.update(new_data)
+            with open("data.json", "w") as f:
+                json.dump(data, f, indent=4)
+        finally:
+            website_entry.delete(0, END)
+            email_entry.delete(0, END)
+            email_entry.insert(0, "lenka.koblih@gmail.com")
+            password_entry.delete(0, END)
 
-        with open("data.txt", "a") as f:
-            f.write(f"{website} | {email} | {password}\n")
+# ---------------------------- WEBSITE SEARCH-------------------------- #
+def search_website():
 
-        website_entry.delete(0, END)
-        email_entry.delete(0, END)
-        email_entry.insert(0, "lenka.koblih@gmail.com")
-        password_entry.delete(0, END)
+    try:
+        with open("data.json", "r") as f:
+            data = json.load(f)
+
+    except FileNotFoundError:
+        messagebox.showinfo(title="Not Found", message="There are no data in the file")
+    else:
+        website = website_entry.get()
+        if len(website) == 0:
+            messagebox.showinfo(title="Empty Field", message="Please fill in the website.")
+        try:
+            info = {web: details for (web, details) in data.items() if web == website}
+            message = f"Details for {website}:\n email: {info[website]['email']}\n password: {info[website]['password']}"
+        except KeyError:
+            messagebox.showinfo(title="Not Found", message="The website in not in the list.")
+        else:
+            messagebox.showinfo(title="Result", message=message)
 
 # ---------------------------- UI SETUP ------------------------------- #
 window = tk.Tk()
@@ -87,9 +113,9 @@ pw_label = tk.Label(text="Password")
 pw_label.config(font=("Courier", 12, "bold"), justify="center", width="15")
 pw_label.grid(row=4, column=0)
 
-website_entry = tk.Entry(width=38, font=("Courier", 12), justify="left")
+website_entry = tk.Entry(width=25, font=("Courier", 12), justify="left")
 website_entry.focus()
-website_entry.grid(row=2, column=1, columnspan=2)
+website_entry.grid(row=2, column=1)
 
 email_entry = tk.Entry(width=38, font=("Courier", 12), justify="left")
 email_entry.insert(0, "lenka.koblih@gmail.com")
@@ -100,6 +126,9 @@ password_entry.grid(row=4, column=1)
 
 password_button = tk.Button(text="Generate Password", font=("Courier", 8), command=generate_password)
 password_button.grid(row=4, column=2)
+
+search_button = tk.Button(text="Search", font=("Courier", 8), width=17, command=search_website)
+search_button.grid(row=2, column=2)
 
 add_button = tk.Button(text="Add", width=36, font=("Courier", 12), justify="center", command=add_password)
 add_button.grid(row=5, column=1, columnspan=2)
