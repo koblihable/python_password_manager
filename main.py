@@ -76,20 +76,17 @@ def search_website():
     try:
         with open("data.json", "r") as f:
             data = json.load(f)
-
     except FileNotFoundError:
         messagebox.showinfo(title="Not Found", message="There are no data in the file")
     else:
         website = website_entry.get()
-        if len(website) == 0:
-            messagebox.showinfo(title="Empty Field", message="Please fill in the website.")
-        try:
-            info = {web: details for (web, details) in data.items() if web == website}
-            message = f"Details for {website}:\n email: {info[website]['email']}\n password: {info[website]['password']}"
-        except KeyError:
-            messagebox.showinfo(title="Not Found", message="The website in not in the list.")
-        else:
+        if website in data:
+            email = data[website]['email']
+            password = data[website]['password']
+            message = f"Details for {website}:\n email: {email}\n password: {password}"
             messagebox.showinfo(title="Result", message=message)
+        else:
+            messagebox.showinfo(title="Empty Field", message=f"{website} not in the list.")
 
 # ---------------------------- UI SETUP ------------------------------- #
 window = tk.Tk()
